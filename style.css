@@ -1,0 +1,222 @@
+/* ── Reset ─────────────────────────────────────────────────────────────── */
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+/* ── Base ──────────────────────────────────────────────────────────────── */
+
+:root {
+  --gold:      #c9a55a;
+  --gold-lt:   #e8d080;
+  --gold-dim:  rgba(201, 165, 90, 0.3);
+  --cream:     #e8d5a3;
+  --bg:        #060d30;
+  --text-dim:  rgba(201, 165, 90, 0.5);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--bg);
+  color: var(--gold);
+  font-family: 'Crimson Text', Georgia, serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── Canvas ────────────────────────────────────────────────────────────── */
+
+canvas#bg {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+}
+
+/* ── Page wrapper ──────────────────────────────────────────────────────── */
+
+.page {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* ── Hero section ──────────────────────────────────────────────────────── */
+
+.hero {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+  padding: 3rem 2rem;
+}
+
+/* Artist name */
+.artist-name {
+  font-size: clamp(0.8rem, 2vw, 1rem);
+  font-weight: 400;
+  letter-spacing: 0.55em;
+  text-transform: uppercase;
+  color: var(--gold);
+  opacity: 0.75;
+}
+
+/* Album cover */
+.cover-wrap {
+  position: relative;
+}
+
+.cover-wrap::before {
+  /* Gold border inset */
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border: 1px solid var(--gold-dim);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.cover {
+  display: block;
+  width: clamp(260px, 40vw, 440px);
+  height: auto;
+  box-shadow:
+    0 0 60px rgba(201, 165, 90, 0.15),
+    0 20px 60px rgba(0, 0, 0, 0.6);
+}
+
+/* Album info */
+.album-info {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.album-title {
+  font-size: clamp(1.3rem, 3.5vw, 2.2rem);
+  font-weight: 400;
+  font-style: italic;
+  color: var(--cream);
+  letter-spacing: 0.05em;
+}
+
+.release-date {
+  font-size: clamp(0.7rem, 1.5vw, 0.85rem);
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  color: var(--gold);
+  opacity: 0.55;
+}
+
+/* ── Platform icon links ───────────────────────────────────────────────── */
+
+.platforms {
+  display: flex;
+  gap: clamp(1.5rem, 4vw, 2.5rem);
+  align-items: center;
+  margin-top: 0.5rem;
+}
+
+.platform-link {
+  color: var(--gold);
+  font-size: clamp(1.3rem, 3vw, 1.7rem);
+  opacity: 0.6;
+  text-decoration: none;
+  transition: opacity 0.3s ease, color 0.3s ease, text-shadow 0.3s ease, transform 0.3s ease;
+  line-height: 1;
+}
+
+.platform-link:hover {
+  opacity: 1;
+  color: var(--gold-lt);
+  text-shadow: 0 0 18px rgba(232, 208, 128, 0.7);
+  transform: translateY(-2px);
+}
+
+/* ── Divider ───────────────────────────────────────────────────────────── */
+
+.press {
+  width: 100%;
+  max-width: 780px;
+  padding: 4rem 2rem 2rem;
+}
+
+.press::before {
+  content: '';
+  display: block;
+  width: 60px;
+  height: 1px;
+  background: var(--gold-dim);
+  margin: 0 auto 4rem;
+}
+
+.press-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 3rem;
+}
+
+/* ── Press quotes ──────────────────────────────────────────────────────── */
+
+.quote {
+  border-left: 1px solid var(--gold-dim);
+  padding-left: 1.5rem;
+  list-style: none;
+}
+
+.quote p {
+  font-size: clamp(1rem, 2vw, 1.2rem);
+  font-style: italic;
+  font-weight: 400;
+  line-height: 1.7;
+  color: var(--cream);
+  opacity: 0.85;
+}
+
+.quote footer {
+  margin-top: 0.75rem;
+  font-size: clamp(0.75rem, 1.5vw, 0.85rem);
+  font-style: normal;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.quote footer a {
+  color: var(--gold);
+  text-decoration: none;
+  opacity: 0.6;
+  transition: opacity 0.3s ease;
+}
+
+.quote footer a:hover {
+  opacity: 1;
+}
+
+/* ── Site footer ───────────────────────────────────────────────────────── */
+
+.site-footer {
+  width: 100%;
+  text-align: center;
+  padding: 4rem 2rem 3rem;
+  font-size: clamp(0.65rem, 1.2vw, 0.75rem);
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--gold);
+  opacity: 0.3;
+}
+
+.site-footer a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.site-footer a:hover {
+  opacity: 1;
+}
