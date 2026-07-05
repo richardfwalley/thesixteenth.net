@@ -5,13 +5,6 @@ const ctx = canvas.getContext('2d');
 
 let W = 0, H = 0;
 
-function resize() {
-  W = canvas.width = window.innerWidth;
-  H = canvas.height = window.innerHeight;
-}
-resize();
-window.addEventListener('resize', resize);
-
 function rand(min, max) { return Math.random() * (max - min) + min; }
 
 // Draw a four-pointed star as in the Très Riches Heures manuscript
@@ -31,27 +24,139 @@ function fourPointedStar(x, y, outer, inner) {
   ctx.closePath();
 }
 
-// Small dot stars — the dense field of tiny gold points
+// Small dot stars — the dense field of tiny gold points.
+// Base positions are normalized (resize-safe); radius/angle around the pole
+// are derived from them once the album's position is known.
 const dotStars = Array.from({ length: 160 }, () => ({
-  x: rand(0, 1), y: rand(0, 1),
+  nx: rand(0, 1), ny: rand(0, 1),
   r: rand(0.4, 1.8),
   phase: rand(0, Math.PI * 2),
-  speed: rand(0.0004, 0.0016),
+  tspeed: rand(0.0004, 0.0016),
   base: rand(0.35, 0.9),
-  dx: rand(-0.000012, 0.000012),
-  dy: rand(-0.000009, 0.000009),
 }));
 
 // Four-pointed gold stars — the manuscript's distinctive ✦ shapes
 const fourStars = Array.from({ length: 60 }, () => ({
-  x: rand(0, 1), y: rand(0, 1),
+  nx: rand(0, 1), ny: rand(0, 1),
   outer: rand(2.5, 6.5),
   phase: rand(0, Math.PI * 2),
-  speed: rand(0.0003, 0.0012),
+  tspeed: rand(0.0003, 0.0012),
   base: rand(0.3, 0.85),
-  dx: rand(-0.000010, 0.000010),
-  dy: rand(-0.000008, 0.000008),
 }));
+
+// — Pleiades — a named, recognisable cluster that circles the album cover
+// like circumpolar stars wheeling around a pole star, starting at the top of the screen,
+// brighter than the ambient field around it.
+const pleiadesLocal = [
+  { name: 'Alcyone',  dx: 0,   dy: 0,   mag: 'bright' },
+  { name: 'Atlas',    dx: 12,  dy: -17, mag: 'mid' },
+  { name: 'Electra',  dx: -27, dy: 6,   mag: 'mid' },
+  { name: 'Maia',     dx: -16, dy: 4,   mag: 'mid' },
+  { name: 'Merope',   dx: -9,  dy: 21,  mag: 'mid' },
+  { name: 'Taygeta',  dx: -19, dy: 9,   mag: 'mid' },
+  { name: 'Pleione',  dx: 10,  dy: -14, mag: 'mid' },
+  { name: 'Celaeno',  dx: -23, dy: 10,  mag: 'dim' },
+  { name: 'Asterope', dx: -14, dy: 16,  mag: 'dim' },
+];
+
+const PLEIADES_SCALE = 4.6;        // px per arcmin of real separation — ~16% smaller
+const PLEIADES_PERIOD = 560;       // seconds per full orbit — 50% slower
+const PLEIADES_TOP_MARGIN = 70;    // px clearance kept from the very top of the viewport
+const PLEIADES_CLEARANCE_GAP = 26; // guaranteed px gap between the cluster and the album's edge
+
+const SKY_PERIOD = PLEIADES_PERIOD; // ambient sky shares roughly the same speed
+const DOT_SPEED_MULT = 0.85;        // background layer — a touch slower (parallax)
+const FOUR_SPEED_MULT = 1.15;       // foreground layer — a touch faster (parallax)
+
+const coverEl = document.querySelector('.cover');
+const pole = { x: 0, y: 0 };
+let pleiadesGeom = [];
+
+// Computes the pole (album centre) and every star's fixed radius + starting angle
+// around it — including a guaranteed floor so no Pleiades star can ever be eclipsed
+// by the album, regardless of viewport size.
+function computeSkyGeometry() {
+  if (!coverEl) return;
+  const rect = coverEl.getBoundingClientRect();
+  if (rect.height === 0) return; // image box not laid out yet — wait for it to load
+
+  pole.x = rect.left + rect.width / 2;
+  pole.y = rect.top + rect.height / 2;
+
+  const halfDiagonal = Math.hypot(rect.width, rect.height) / 2;
+  const maxDy = Math.max(...pleiadesLocal.map((s) => s.dy));
+  const clearanceRadius = halfDiagonal + PLEIADES_CLEARANCE_GAP + maxDy * PLEIADES_SCALE;
+  const topRadius = Math.max(pole.y - PLEIADES_TOP_MARGIN, 60);
+  const startRadius = Math.max(topRadius, clearanceRadius);
+
+  pleiadesGeom = pleiadesLocal.map((s) => {
+    const baseX = s.dx * PLEIADES_SCALE;
+    const baseY = s.dy * PLEIADES_SCALE - startRadius;
+    return {
+      mag: s.mag,
+      seed: s.dx * 13 + s.dy * 7,
+      radius: Math.hypot(baseX, baseY),
+      angle0: Math.atan2(baseY, baseX),
+    };
+  });
+
+  // Ambient starfield — convert each star's base position into a radius + angle
+  // around the same pole, so the whole sky can wheel slowly around the album too.
+  for (const s of dotStars) {
+    const x = s.nx * W, y = s.ny * H;
+    s.radius = Math.hypot(x - pole.x, y - pole.y);
+    s.angle0 = Math.atan2(y - pole.y, x - pole.x);
+  }
+  for (const s of fourStars) {
+    const x = s.nx * W, y = s.ny * H;
+    s.radius = Math.hypot(x - pole.x, y - pole.y);
+    s.angle0 = Math.atan2(y - pole.y, x - pole.x);
+  }
+}
+
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+  computeSkyGeometry();
+}
+resize();
+window.addEventListener('resize', resize);
+
+if (coverEl && coverEl.complete) computeSkyGeometry();
+if (coverEl) coverEl.addEventListener('load', computeSkyGeometry);
+
+const PLEIADES_SIZES = {
+  bright: { r: 3.1, glow: 15 },
+  mid:    { r: 1.9, glow: 9.5 },
+  dim:    { r: 1.3, glow: 6.5 },
+};
+
+function drawPleiades(t) {
+  if (pleiadesGeom.length === 0) return;
+  const orbitAngle = (t / PLEIADES_PERIOD) * Math.PI * 2;
+
+  for (const s of pleiadesGeom) {
+    const angle = s.angle0 + orbitAngle;
+    const x = pole.x + Math.cos(angle) * s.radius;
+    const y = pole.y + Math.sin(angle) * s.radius;
+    const size = PLEIADES_SIZES[s.mag];
+    const alpha = 0.82 + 0.18 * Math.sin(t * 0.7 + s.seed);
+
+    const glow = ctx.createRadialGradient(x, y, 0, x, y, size.glow);
+    glow.addColorStop(0,    `rgba(255, 246, 210, ${alpha * 0.9})`);
+    glow.addColorStop(0.35, `rgba(247, 222, 150, ${alpha * 0.45})`);
+    glow.addColorStop(1,    'rgba(247, 222, 150, 0)');
+    ctx.beginPath();
+    ctx.arc(x, y, size.glow, 0, Math.PI * 2);
+    ctx.fillStyle = glow;
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.arc(x, y, size.r, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(255, 252, 232, ${Math.min(alpha * 1.1, 1)})`;
+    ctx.fill();
+  }
+}
 
 let startTime = null;
 
@@ -68,12 +173,19 @@ function tick(now) {
   ctx.fillRect(0, 0, W, H);
 
   // — Dot stars —
+  const dotAngle = (t / SKY_PERIOD) * Math.PI * 2 * DOT_SPEED_MULT;
   for (const s of dotStars) {
-    s.x = (s.x + s.dx + 1.04) % 1.04;
-    s.y = (s.y + s.dy + 1.04) % 1.04;
+    let x, y;
+    if (s.radius !== undefined) {
+      const angle = s.angle0 + dotAngle;
+      x = pole.x + Math.cos(angle) * s.radius;
+      y = pole.y + Math.sin(angle) * s.radius;
+    } else {
+      x = s.nx * W;
+      y = s.ny * H;
+    }
 
-    const alpha = s.base * (0.55 + 0.45 * Math.sin(t * s.speed * 1000 + s.phase));
-    const x = s.x * W, y = s.y * H;
+    const alpha = s.base * (0.55 + 0.45 * Math.sin(t * s.tspeed * 1000 + s.phase));
 
     const glow = ctx.createRadialGradient(x, y, 0, x, y, s.r * 4.5);
     glow.addColorStop(0,   `rgba(245, 225, 140, ${alpha})`);
@@ -92,12 +204,19 @@ function tick(now) {
   }
 
   // — Four-pointed stars —
+  const fourAngle = (t / SKY_PERIOD) * Math.PI * 2 * FOUR_SPEED_MULT;
   for (const s of fourStars) {
-    s.x = (s.x + s.dx + 1.04) % 1.04;
-    s.y = (s.y + s.dy + 1.04) % 1.04;
+    let x, y;
+    if (s.radius !== undefined) {
+      const angle = s.angle0 + fourAngle;
+      x = pole.x + Math.cos(angle) * s.radius;
+      y = pole.y + Math.sin(angle) * s.radius;
+    } else {
+      x = s.nx * W;
+      y = s.ny * H;
+    }
 
-    const alpha = s.base * (0.55 + 0.45 * Math.sin(t * s.speed * 1000 + s.phase));
-    const x = s.x * W, y = s.y * H;
+    const alpha = s.base * (0.55 + 0.45 * Math.sin(t * s.tspeed * 1000 + s.phase));
     const inner = s.outer * 0.22;
 
     // Soft glow
@@ -118,6 +237,9 @@ function tick(now) {
     ctx.fill();
     ctx.restore();
   }
+
+  // — Pleiades —
+  drawPleiades(t);
 
   requestAnimationFrame(tick);
 }
