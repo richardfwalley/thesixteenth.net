@@ -85,6 +85,30 @@ series can be chained onto them over the overlap rather than dropped in raw:
 Either way the factor, the overlap length and the wording for a footnote come back on the
 report. `compare_overlap()` prints the two sources side by side before you decide.
 
+## Survey basis: the caveat that travels with the number
+
+Two series can agree on units and periods and still not be comparable, because the
+agencies surveyed different firms over a different window. Record each side's design in
+the config and the mismatch becomes loud:
+
+```toml
+  [dataset.wealth.oecd.basis]
+  survey = "National innovation surveys (CIS-type)"
+  reference_period_years = 3
+  size_threshold = 10
+
+  [dataset.wealth.source.basis]
+  survey = "Business Operations Survey"
+  reference_period_years = 2
+  size_threshold = 6
+```
+
+`splice()` then reports `ok = False`, warns per differing field, and writes the
+difference — with its direction of bias, for the fields where that is known — into
+`report.footnote()`. A basis recorded on only one side is itself flagged as unverified.
+
+See `docs/business-innovation.md` for the worked case this was built for.
+
 ## Manipulating the result
 
 Every transform takes a tidy frame and returns one, so they compose in any order:

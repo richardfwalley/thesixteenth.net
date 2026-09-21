@@ -3,33 +3,66 @@
 #
 # Finding the OECD ids: open the series in the OECD Data Explorer, then use the
 # "Developer API" panel — it prints agency, dataflow, version and the dotted key.
+#
+# The [*.basis] blocks are not decoration. Where the two sides were surveyed
+# differently, splice() warns and writes the difference into the footnote, because
+# no arithmetic can repair a definitional gap.
 
-[dataset.example]
-title = "EXAMPLE — replace me"
-link = "none"          # none | ratio | level  (see splice.splice)
-overwrite = false      # replace OECD's own NZL rows, if the flow has any
+[dataset.business-innovation]
+title = "OECD business innovation indicators, with New Zealand spliced in"
+link = "none"          # no NZ rows in the OECD flow to anchor on, so nothing to chain
+overwrite = false
 strict_units = true
-notes = "Placeholder so the config parses; delete once a real dataset is named."
+notes = """
+OECD side: Business innovation statistics and indicators (BISI), compiled from national
+innovation surveys. The April 2026 release covers 2020-2022 for 33 OECD members plus 7
+partner/accession economies — NZ is not among the reporting countries.
+NZ side: Stats NZ Business Operations Survey (BOS), Module 1 innovation questions.
 
-  [dataset.example.oecd]
-  agency = "OECD.SDD.NAD"
-  dataflow = "DSD_NAMAIN10@DF_TABLE1"
+UNVERIFIED — both hosts are blocked by this sandbox's egress policy, so every id and
+every basis value below is a placeholder to confirm against the source metadata before
+any number is published. See docs/business-innovation.md.
+"""
+
+  [dataset.business-innovation.oecd]
+  agency = "TODO"                      # e.g. OECD.STI.PIE / OECD.STI.STP — confirm in Developer API
+  dataflow = "TODO_CONFIRM@DF_TODO"    # full DSD_CODE@DATAFLOW_CODE
   version = "1.0"
-  key = ""             # dotted dimension filter, "" = the whole flow
-  start_period = "2000"
+  key = ""                             # dotted dimension filter once the indicator is chosen
+  start_period = "2010"
 
-  [dataset.example.source]
+    [dataset.business-innovation.oecd.basis]
+    survey = "National innovation surveys (CIS-type)"
+    manual = "Oslo Manual 2018"
+    reference_period_years = 3         # CONFIRM against the BISI metadata
+    size_threshold = 10                # CONFIRM
+    industry_scope = "CONFIRM — core CIS industry coverage"
+    population = "CONFIRM"
+
+  [dataset.business-innovation.source]
   name = "Stats NZ"
-  url = ""             # or path = "data/raw/<hand-downloaded>.csv"
+  path = "data/raw/bos-2023-innovation.csv"   # hand-downloaded from the BOS 2023 release
   area = "NZL"
-  series = "describe the exact domestic series here"
-  notes = "definitional differences vs the OECD measure go here — they end up in the footnote"
+  series = "Business Operations Survey 2023, Module 1: innovation"
+  notes = """
+BOS 2023 replaced the three separate questions on operational, organisational and
+marketing process innovation with a single process-innovation question, so the 2023
+process-innovation figure is not on the same footing as earlier BOS rounds.
+"""
 
-    [dataset.example.source.mapping]
-    # domestic CSV column -> tidy column
+    [dataset.business-innovation.source.basis]
+    survey = "Business Operations Survey"
+    manual = "CONFIRM — which Oslo Manual edition BOS 2023 aligns to"
+    reference_period_years = 2         # CONFIRM against the BOS 2023 questionnaire
+    size_threshold = 6                 # CONFIRM
+    industry_scope = "CONFIRM — ANZSIC coverage of the BOS population"
+    population = "CONFIRM"
+
+    [dataset.business-innovation.source.mapping]
+    # BOS CSV column -> tidy column; fill in once the export is in hand
     # "Period" = "time_period"
-    # "Data_value" = "obs_value"
+    # "Value" = "obs_value"
 
-    [dataset.example.source.constants]
-    # ref_area = "NZL"
-    # unit = "PT_B1GQ"
+    [dataset.business-innovation.source.constants]
+    # indicator = "..."   # match the OECD MEASURE code being filled
+    # unit = "PT"         # percentage of enterprises

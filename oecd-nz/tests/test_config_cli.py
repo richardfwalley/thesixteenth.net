@@ -11,8 +11,24 @@ FIXTURES = Path(__file__).resolve().parent / "fixtures"
 
 def test_shipped_config_parses():
     specs = config_module.load(REPO / "config" / "datasets.toml")
-    assert "example" in specs
-    assert specs["example"].source.name == "Stats NZ"
+    spec = specs["business-innovation"]
+    assert spec.source.name == "Stats NZ"
+    assert spec.oecd_basis.reference_period_years == 3
+    assert spec.source.basis.reference_period_years == 2
+
+
+def test_shipped_config_is_flagged_as_unfinished():
+    spec = config_module.load(REPO / "config" / "datasets.toml")["business-innovation"]
+    assert not spec.ready
+    placeholders = spec.placeholders()
+    assert "dataset.business-innovation.oecd.dataflow" in placeholders
+    assert any(".basis." in p for p in placeholders)
+
+
+def test_build_refuses_placeholder_ids(capsys):
+    code = main(["--config", str(REPO / "config" / "datasets.toml"), "build", "business-innovation"])
+    assert code == 2
+    assert "placeholder OECD ids" in capsys.readouterr().err
 
 
 def test_missing_dataflow_id_is_a_clear_error(tmp_path):

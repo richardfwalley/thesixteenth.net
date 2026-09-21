@@ -12,6 +12,8 @@ from typing import Literal
 
 import pandas as pd
 
+from .basis import Basis
+from .basis import compare as compare_basis
 from .normalise import TIDY_COLUMNS, coverage
 
 LinkMethod = Literal["none", "level", "ratio"]
@@ -31,6 +33,8 @@ class SpliceReport:
     overlap_periods: tuple[str, ...]
     warnings: list[str] = field(default_factory=list)
     notes: list[str] = field(default_factory=list)
+    panel_basis: Basis | None = None
+    incoming_basis: Basis | None = None
 
     @property
     def ok(self) -> bool:
@@ -49,6 +53,11 @@ class SpliceReport:
                 else f"The domestic series is {verb} onto the OECD basis by a factor of {self.link_factor:.4g}"
             )
             bits.append(f"estimated over {len(self.overlap_periods)} overlapping period(s).")
+        if self.panel_basis and self.incoming_basis:
+            bits.append(
+                f"Panel basis: {self.panel_basis.describe()}. "
+                f"{self.area} basis: {self.incoming_basis.describe()}."
+            )
         if self.missing_vs_panel:
             bits.append(
                 f"{self.area} has no observation for {len(self.missing_vs_panel)} period(s) "
@@ -106,12 +115,18 @@ def splice(
     link: LinkMethod = "none",
     overwrite: bool = False,
     strict_units: bool = True,
+    panel_basis: Basis | None = None,
+    incoming_basis: Basis | None = None,
 ) -> tuple[pd.DataFrame, SpliceReport]:
     """Add `area`'s observations from `incoming` to `panel`.
 
     link="ratio"/"level" rescales the incoming series onto the panel's basis using
     periods where both sources already report `area` — only meaningful when the OECD
     flow carries a partial or differently-defined NZ series to anchor against.
+
+    panel_basis/incoming_basis describe how each side was surveyed. Where they differ,
+    the difference is warned about and written into the report's footnote; no arithmetic
+    can repair a definitional gap, so the pipeline documents it instead of hiding it.
     """
     for name, frame in (("panel", panel), ("incoming", incoming)):
         missing = [c for c in TIDY_COLUMNS if c not in frame.columns]
@@ -120,6 +135,10 @@ def splice(
 
     warnings: list[str] = []
     notes: list[str] = []
+
+    basis_warnings, basis_notes = compare_basis(panel_basis, incoming_basis)
+    warnings.extend(basis_warnings)
+    notes.extend(basis_notes)
 
     add = incoming.loc[incoming["ref_area"] == area].copy()
     if add.empty:
@@ -220,6 +239,8 @@ def splice(
         overlap_periods=overlap,
         warnings=warnings,
         notes=notes,
+        panel_basis=panel_basis,
+        incoming_basis=incoming_basis,
     )
     return out, report
 

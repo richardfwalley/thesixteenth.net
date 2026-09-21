@@ -32,6 +32,19 @@ def cmd_build(args) -> int:
         return 2
     spec = specs[args.dataset]
 
+    blockers = [b for b in spec.placeholders() if b.endswith((".agency", ".dataflow"))]
+    if blockers and not args.oecd_file:
+        print(
+            "this dataset still has placeholder OECD ids: " + ", ".join(blockers) + "\n"
+            "Open the series in the OECD Data Explorer, click 'Developer API' above the data "
+            "table, and copy agency / dataflow / version out of the query it shows.",
+            file=sys.stderr,
+        )
+        return 2
+    unconfirmed = [b for b in spec.placeholders() if ".basis." in b]
+    if unconfirmed:
+        print("basis values still unconfirmed: " + ", ".join(unconfirmed), file=sys.stderr)
+
     panel = _load_panel(spec, args)
     print(f"OECD panel: {len(panel)} obs, {panel['ref_area'].nunique()} areas")
 
@@ -53,6 +66,8 @@ def cmd_build(args) -> int:
         link=spec.link,
         overwrite=spec.overwrite,
         strict_units=spec.strict_units,
+        panel_basis=spec.oecd_basis,
+        incoming_basis=spec.source.basis,
     )
     print("\n" + str(report))
     print("\nfootnote: " + report.footnote())
@@ -78,7 +93,8 @@ def cmd_coverage(args) -> int:
 def cmd_datasets(args) -> int:
     for key, spec in config_module.load(args.config).items():
         source = spec.source.name if spec.source else "— no domestic source —"
-        print(f"{key:20} {spec.flow}  <- {source}\n{'':20} {spec.title}")
+        flag = "" if spec.ready else f"  [{len(spec.placeholders())} placeholder(s) to fill]"
+        print(f"{key:20} {spec.flow}  <- {source}{flag}\n{'':20} {spec.title}")
     return 0
 
 
