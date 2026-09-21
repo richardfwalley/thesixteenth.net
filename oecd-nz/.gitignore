@@ -1,7 +1,0 @@
-__pycache__/
-*.pyc
-.pytest_cache/
-
-# Downloaded API responses — a local speed-up, never worth committing.
-data/cache/*
-!data/cache/.gitkeep
