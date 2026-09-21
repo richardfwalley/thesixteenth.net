@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "oecdnz"
+version = "0.1.0"
+description = "Splice a non-member series (New Zealand) into an OECD panel, then manipulate the result"
+requires-python = ">=3.11"
+dependencies = ["pandas>=2.0", "requests>=2.31"]
+
+[project.scripts]
+oecdnz = "oecdnz.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]

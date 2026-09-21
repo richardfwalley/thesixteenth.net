@@ -1,0 +1,35 @@
+# One table per job. Fill in the dataflow you want and the NZ series that replaces
+# the hole in it; nothing else in the pipeline needs to change.
+#
+# Finding the OECD ids: open the series in the OECD Data Explorer, then use the
+# "Developer API" panel — it prints agency, dataflow, version and the dotted key.
+
+[dataset.example]
+title = "EXAMPLE — replace me"
+link = "none"          # none | ratio | level  (see splice.splice)
+overwrite = false      # replace OECD's own NZL rows, if the flow has any
+strict_units = true
+notes = "Placeholder so the config parses; delete once a real dataset is named."
+
+  [dataset.example.oecd]
+  agency = "OECD.SDD.NAD"
+  dataflow = "DSD_NAMAIN10@DF_TABLE1"
+  version = "1.0"
+  key = ""             # dotted dimension filter, "" = the whole flow
+  start_period = "2000"
+
+  [dataset.example.source]
+  name = "Stats NZ"
+  url = ""             # or path = "data/raw/<hand-downloaded>.csv"
+  area = "NZL"
+  series = "describe the exact domestic series here"
+  notes = "definitional differences vs the OECD measure go here — they end up in the footnote"
+
+    [dataset.example.source.mapping]
+    # domestic CSV column -> tidy column
+    # "Period" = "time_period"
+    # "Data_value" = "obs_value"
+
+    [dataset.example.source.constants]
+    # ref_area = "NZL"
+    # unit = "PT_B1GQ"
